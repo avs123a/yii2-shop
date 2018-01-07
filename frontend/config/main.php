@@ -29,6 +29,22 @@ return [
         'errorHandler' => [
             'errorAction' => 'site/error',
         ],
+	    'urlManager' => [
+            'enablePrettyUrl' => true,
+			//'showScriptName' => false,
+            'rules' => [
+			   ' ' => 'site/index',
+			   'about' => 'site/about',
+			   'contact' => 'site/contact',
+			   'news' => 'new/index',
+			   'cart' => 'cart/list',
+			   'order' => 'cart/order',
+			   
+               '<controller:\w+>/<id:\d+>'=>'<controller>/view',
+               '<controller:\w+>/<action:\w+>/<id:\d+>'=>'<controller>/<action>',
+               '<controller:\w+>/<action:\w+>'=>'<controller>/<action>',
+            ],
+        ],
         'cart' => [
             'class' => 'yz\shoppingcart\ShoppingCart',
         ],

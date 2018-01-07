@@ -30,6 +30,7 @@ $this->params['breadcrumbs'][] = $this->title;
         'filterModel' => $searchModel,
         'columns' => [
             'id',
+			'product_id',
             [
                 'format' => 'raw',
                 'value' => function ($model, $key, $index, $column) {

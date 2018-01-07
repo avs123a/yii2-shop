@@ -20,9 +20,11 @@ use yii\widgets\ActiveForm;
     <?= $form->field($model, 'category_id')->dropDownList(ArrayHelper::map($categories, 'id', 'title'), ['prompt' => 'Select category']) ?>
 
     <?= $form->field($model, 'price')->textInput(['maxlength' => 19]) ?>
+	
+	<?= $form->field($model, 'instore')->textInput(['maxlength' => 19]) ?>
 
     <div class="form-group">
-        <?= Html::submitButton($model->isNewRecord ? 'Create' : 'Update', ['class' => $model->isNewRecord ? 'btn btn-success' : 'btn btn-primary']) ?>
+        <?= Html::submitButton($model->isNewRecord ? 'Create' : 'Update', ['style'=>'background-color:#0033ff','class' => $model->isNewRecord ? 'btn btn-success' : 'btn btn-primary']) ?>
     </div>
 
     <?php ActiveForm::end(); ?>

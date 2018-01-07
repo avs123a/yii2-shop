@@ -47,10 +47,13 @@ class Order extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['phone', 'email'], 'required'],
-            [['notes'], 'string'],
+            [['surname', 'name', 'country', 'region', 'city', 'address', 'zip_code', 'phone', 'email'], 'required'],
+            [['address', 'notes'], 'string'],
+			[['customer_type'], 'string', 'max' => 6],
+			[['zip_code'], 'string', 'max' => 10],
+            [['surname', 'name', 'country', 'region', 'paysystem', 'wallet'], 'string', 'max' => 30],
+            [['city'], 'string', 'max' => 39],
             [['phone', 'email'], 'string', 'max' => 255],
-            [['email'], 'email'],
         ];
     }
 
@@ -63,9 +66,16 @@ class Order extends \yii\db\ActiveRecord
             'id' => 'ID',
             'created_at' => 'Created At',
             'updated_at' => 'Updated At',
-            'phone' => 'Phone',
+            'surname' => 'Surname',
+            'name' => 'Name',
+            'country' => 'Country',
+            'region' => 'Region',
+            'city' => 'City',
             'address' => 'Address',
+            'phone' => 'Phone',
             'email' => 'Email',
+            'paysystem' => 'Paysystem',
+            'wallet' => 'Wallet',
             'notes' => 'Notes',
             'status' => 'Status',
         ];

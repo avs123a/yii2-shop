@@ -51,7 +51,7 @@ class Product extends \yii\db\ActiveRecord implements CartPositionInterface
     {
         return [
             [['description'], 'string'],
-            [['category_id'], 'integer'],
+            [['category_id','instore'], 'integer'],
             [['price'], 'number'],
             [['title'], 'string', 'max' => 255]
         ];
@@ -69,6 +69,7 @@ class Product extends \yii\db\ActiveRecord implements CartPositionInterface
             'description' => 'Description',
             'category_id' => 'Category ID',
             'price' => 'Price',
+			'instore'=>'In Store',
         ];
     }
 
@@ -101,6 +102,15 @@ class Product extends \yii\db\ActiveRecord implements CartPositionInterface
      */
     public function getPrice()
     {
+        $attributes = \common\models\ProductAttributes::find()->where(['product_id' => $this->id])->all();
+		foreach($attributes as $atrs)
+		{
+			   $atrid3 = $atrs->id;
+			   if($pr = \Yii::$app->session->get("P_$atrid3"))
+			   {
+				 $this->price*=$pr;
+			   }
+		}
         return $this->price;
     }
 

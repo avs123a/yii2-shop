@@ -23,19 +23,51 @@ class CatalogController extends \yii\web\Controller
     {
         /** @var Category $category */
         $category = null;
-
+        $search = null;
         $categories = Category::find()->indexBy('id')->orderBy('id')->all();
 
-        $productsQuery = Product::find();
+        $productsQuery = Product::find()->where(['not',['instore'=>'0']])->indexBy('id');
         if ($id !== null && isset($categories[$id])) {
             $category = $categories[$id];
-            $productsQuery->where(['category_id' => $this->getCategoryIds($categories, $id)]);
+            $productsQuery->where(['category_id' => $this->getCategoryIds($categories, $id)])->andFilterWhere(['not',['instore'=>'0']])->indexBy('id');
         }
+		
+		//global search
+		if(\Yii::$app->request->get('searchbutton')){
+			$gsearch=\Yii::$app->request->get('gsearch');
+			$productsQuery->andFilterWhere(['like','title',$gsearch])->orFilterWhere(['like','description',$gsearch]);
+		}
+		
+		//filters
+		if(!\Yii::$app->request->get('resetfilters')){
+		  if(\Yii::$app->request->get('addfilters')){
+			if($minprice=\Yii::$app->request->get('minprice')){
+			   $productsQuery->andFilterWhere(['>=','price',$minprice]);
+			}
+			if($maxprice=\Yii::$app->request->get('maxprice')){
+			   $productsQuery->andFilterWhere(['<=','price',$maxprice]);
+			}
+			if($sort=\Yii::$app->request->get('sort')){
+			  switch($sort)
+			  {
+				case "default" : $productsQuery->orderBy('id');
+				break;
+				case "price_high" : $productsQuery->orderBy('price DESC');
+				break;
+				case "price_low" : $productsQuery->orderBy('price');
+				break;
+			  }
+			}
+		  }
+		}
+		
+		
+		
 
         $productsDataProvider = new ActiveDataProvider([
-            'query' => $productsQuery,
+            'query' => $productsQuery->andFilterWhere(['not',['instore'=>'0']]),
             'pagination' => [
-                'pageSize' => 10,
+                'pageSize' => 9,
             ],
         ]);
 
@@ -43,14 +75,61 @@ class CatalogController extends \yii\web\Controller
             'category' => $category,
             'menuItems' => $this->getMenuItems($categories, isset($category->id) ? $category->id : null),
             'productsDataProvider' => $productsDataProvider,
+			
         ]);
     }
 
-    public function actionView()
+    public function actionView($id)
     {
-        return $this->render('view');
+		$model=$this->findModel($id);
+		$attr=\common\models\ProductAttributes::find()->where(['product_id' => $id])->all();
+		$query = \common\models\ProductFeedback::find()->where(['product_id' => $id]);
+		$pagination = new \yii\data\Pagination(['defaultPageSize' => 5 , 'totalCount' => $query->count(),]);
+		$fdb = $query->indexBy('id')->orderBy('id DESC')->offset($pagination->offset)->limit($pagination->limit)->asArray()->all();
+		
+		//comments
+		  if(\Yii::$app->request->get('add_comment'))
+		  {
+			  $comment = new \common\models\ProductFeedback();
+			  $comment->product_id = $id;
+			  $comment->id_user = \Yii::$app->user->identity->username;
+			  $comment->comment = \Yii::$app->request->get('newcomment');
+			  if($comment->save())
+			  {
+				  \Yii::$app->session->addFlash('success', 'Thank you for comment.');
+				  return $this->redirect(['view','id' => $id]);
+			  }
+			  else
+			  {
+				  \Yii::$app->session->addFlash('error', 'Cannot add your comment.');
+			  }
+		  }
+		  if(! \Yii::$app->user->isGuest){
+		     if(\common\models\ProductFeedback::find()->where(['id_user' => \Yii::$app->user->identity->username, 'product_id' => $id])->all())
+		     {
+			    $commentable = false;
+		     }
+		     else{
+			    $commentable = true;
+		     }
+		  }
+		  else{
+			 $commentable = false;
+		  }
+		//comments
+		
+        return $this->render('view',[
+		'model'=> $model,
+		'attr' => $attr,
+		'feedbacks' => $fdb,
+		'pagination' => $pagination,
+		'commentable' => $commentable,
+		
+		]
+		);
     }
-
+	
+	
     /**
      * @param Category[] $categories
      * @param int $activeId
@@ -94,4 +173,15 @@ class CatalogController extends \yii\web\Controller
         }
         return $categoryIds;
     }
+	protected function findModel($id)
+	{
+	   if(($model=Product::findOne($id))!==null)
+	   {
+		   return $model;
+	   }
+	   else
+	   {
+		   throw new NotFoundHttpException('Not found item');
+	   }
+	}
 }

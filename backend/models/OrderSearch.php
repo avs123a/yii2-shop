@@ -19,7 +19,7 @@ class OrderSearch extends Order
     {
         return [
             [['id', 'created_at', 'updated_at'], 'integer'],
-            [['phone', 'email', 'notes', 'status'], 'safe'],
+            [['customer_type', 'phone', 'email', 'notes', 'status', 'zip_code'], 'safe'],
         ];
     }
 
@@ -41,10 +41,13 @@ class OrderSearch extends Order
      */
     public function search($params)
     {
-        $query = Order::find()->orderBy('id DESC');
+        $query = Order::find()->orderBy('id DESC')->indexBy('id')->asArray();
 
         $dataProvider = new ActiveDataProvider([
             'query' => $query,
+			'pagination' => [
+                'pageSize' => 10,
+				],
         ]);
 
         if (!($this->load($params) && $this->validate())) {

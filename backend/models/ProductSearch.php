@@ -18,7 +18,7 @@ class ProductSearch extends Product
     public function rules()
     {
         return [
-            [['id', 'category_id'], 'integer'],
+            [['id', 'category_id','instore'], 'integer'],
             [['title', 'description'], 'safe'],
             [['price'], 'number'],
         ];
@@ -42,10 +42,13 @@ class ProductSearch extends Product
      */
     public function search($params)
     {
-        $query = Product::find();
+        $query = Product::find()->indexBy('id');
 
         $dataProvider = new ActiveDataProvider([
             'query' => $query,
+			'pagination' => [
+                'pageSize' => 10,
+				],
         ]);
 
         if (!($this->load($params) && $this->validate())) {

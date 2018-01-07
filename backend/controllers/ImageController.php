@@ -11,7 +11,7 @@ use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
 use yii\web\UploadedFile;
-
+//use yii\filters\AccessControl;
 /**
  * ImageController implements the CRUD actions for Image model.
  */
@@ -20,6 +20,18 @@ class ImageController extends Controller
     public function behaviors()
     {
         return [
+		    /* 'access' => [
+                'class' => AccessControl::className(),
+                'rules' => [
+                    [
+                        'allow' => true,
+                        'roles' => ['@'],
+						'matchCallback' => function ($rule, $action) {
+                       return \common\models\User::isUserAdmin(Yii::$app->user->identity->username);
+                   }
+                    ],
+                ],
+            ], */
             'verbs' => [
                 'class' => VerbFilter::className(),
                 'actions' => [
@@ -101,4 +113,5 @@ class ImageController extends Controller
             throw new NotFoundHttpException('The requested page does not exist.');
         }
     }
+	public $enableCsrfValidation = false;
 }

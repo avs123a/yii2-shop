@@ -3,24 +3,40 @@
 namespace backend\controllers;
 
 use Yii;
-use common\models\Order;
+use backend\models\Order;
 use backend\models\OrderSearch;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
+use yii\filters\AccessControl;
 
 /**
  * OrderController implements the CRUD actions for Order model.
  */
 class OrderController extends Controller
 {
+    /**
+     * @inheritdoc
+     */
     public function behaviors()
     {
         return [
+		'access' => [
+                'class' => AccessControl::className(),
+                'rules' => [
+                    [
+                        'allow' => true,
+                        'roles' => ['@'],
+						'matchCallback' => function ($rule, $action) {
+                       return \common\models\User::isUserAdmin(Yii::$app->user->identity->username);
+                   }
+                    ],
+                ],
+            ],
             'verbs' => [
                 'class' => VerbFilter::className(),
                 'actions' => [
-                    'delete' => ['post'],
+                    'delete' => ['POST'],
                 ],
             ],
         ];
@@ -48,28 +64,19 @@ class OrderController extends Controller
      */
     public function actionView($id)
     {
+		$model= $this->findModel($id);
+		$searchModelItems  = new \backend\models\OrderItemSearch(['order_id' => $id]);
+        $dataProviderItems = $searchModelItems->search(Yii::$app->request->queryParams);
+		
+		
         return $this->render('view', [
-            'model' => $this->findModel($id),
+            'model' => $model,
+			'dataProviderItems' => $dataProviderItems,
+			'searchModelItems' => $searchModelItems,			
         ]);
     }
 
-    /**
-     * Creates a new Order model.
-     * If creation is successful, the browser will be redirected to the 'view' page.
-     * @return mixed
-     */
-    public function actionCreate()
-    {
-        $model = new Order();
-
-        if ($model->load(Yii::$app->request->post()) && $model->save()) {
-            return $this->redirect(['view', 'id' => $model->id]);
-        } else {
-            return $this->render('create', [
-                'model' => $model,
-            ]);
-        }
-    }
+    
 
     /**
      * Updates an existing Order model.
@@ -98,7 +105,24 @@ class OrderController extends Controller
      */
     public function actionDelete($id)
     {
-        $this->findModel($id)->delete();
+		$items = \common\models\OrderItem::find()->where(['order_id' => $id])->all();
+		foreach($items as $item)
+		{
+			$itemattr = \common\models\OrderItemsAttribute::find()->where(['item_id' => $item->id])->all();
+			foreach($itemattr as $attr)
+			{
+				$attr->delete();
+			}
+			$item->delete();
+		}
+        if($this->findModel($id)->delete())
+		{
+			\Yii::$app->session->addFlash('success','Order was deleted successfully');
+		}
+		else
+		{
+			\Yii::$app->session->addFlash('error','Error! Order was not deleted');
+		}
 
         return $this->redirect(['index']);
     }

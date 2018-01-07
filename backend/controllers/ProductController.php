@@ -9,6 +9,7 @@ use backend\models\ProductSearch;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
+use yii\filters\AccessControl;
 
 /**
  * ProductController implements the CRUD actions for Product model.
@@ -18,6 +19,18 @@ class ProductController extends Controller
     public function behaviors()
     {
         return [
+		    'access' => [
+                'class' => AccessControl::className(),
+                'rules' => [
+                    [
+                        'allow' => true,
+                        'roles' => ['@'],
+						'matchCallback' => function ($rule, $action) {
+                       return \common\models\User::isUserAdmin(Yii::$app->user->identity->username);
+                   }
+                    ],
+                ],
+            ],
             'verbs' => [
                 'class' => VerbFilter::className(),
                 'actions' => [
@@ -49,8 +62,17 @@ class ProductController extends Controller
      */
     public function actionView($id)
     {
+		$model = $this->findModel($id);
+		$searchModelAttr  = new \backend\models\ProductAttributesSearch(['product_id' => $id]);
+        $dataProviderAttr = $searchModelAttr->search(Yii::$app->request->queryParams);
+		$searchModelFeedBack = new \backend\models\ProductFeedbackSearch(['product_id' => $id]);
+		$dataProviderFeedBack = $searchModelFeedBack->search(Yii::$app->request->queryParams);
         return $this->render('view', [
-            'model' => $this->findModel($id),
+            'model' => $model,
+			'dataProviderAttr' => $dataProviderAttr,
+			'searchModelAttr' => $searchModelAttr,
+			'searchModelFeedBack' => $searchModelFeedBack,
+			'dataProviderFeedBack' => $dataProviderFeedBack,
         ]);
     }
 
@@ -103,7 +125,29 @@ class ProductController extends Controller
      */
     public function actionDelete($id)
     {
-        $this->findModel($id)->delete();
+		$prodattributes = \common\models\ProductAttributes::find()->where(['product_id' => $id])->all();
+		foreach($prodattributes as $atr)
+		{
+			$atrvalues = \common\models\ProductAttributeValue::find()->where(['attr_id' => $atr->id])->all();
+			foreach($$atrvalues as $atrval)
+		    {
+			    $atrval->delete();
+		    }
+			$atr->delete();
+		}
+		$prodfeedback = \common\models\ProductFeedback::find()->where(['product_id' => $id])->all();
+		foreach($prodfeedback as $fdb)
+		{
+			$fdb->delete();
+		}
+        if($this->findModel($id)->delete())
+		{
+			\Yii::$app->session->addFlash('success','Product was deleted successfully');
+		}
+		else
+		{
+			\Yii::$app->session->addFlash('error','Error! Product was not deleted');
+		}
 
         return $this->redirect(['index']);
     }
